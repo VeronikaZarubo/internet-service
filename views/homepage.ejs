@@ -15,8 +15,23 @@
     </header>
 
     <main>
-        <h3>Hello this is the home page</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam illo officiis dolores blanditiis iusto sequi hic tenetur vitae amet ipsa officia maiores aspernatur sit, quae repellat molestiae numquam. Natus, nemo?</p>
+        <form action="/register" method="POST">
+            <% errors.forEach(error => { %>
+                <p class="notice"><%= error %></p>            
+            <% }) %>
+
+            <fieldset>
+                <legend>Create an account</legend>
+                <label for="username"><small>Username</small></label>
+                <input type="text" id="username" name="username" autocomplete="off" />
+      
+                <label for="password"><small>Password</small></label>
+                <input type="password" id="password" name="password" autocomplete="off" />
+      
+                <br />
+                <button>Sign Up</button>
+              </fieldset>
+        </form>        
     </main>
 
     <footer>

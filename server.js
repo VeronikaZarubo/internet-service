@@ -1,5 +1,6 @@
 require("dotenv").config()
 const jwt = require("jsonwebtoken")
+const sanitizeHTML = require("sanitize-html")
 const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 const express = require("express")
@@ -17,6 +18,19 @@ const createTables = db.transaction(() => {
     )
     `
     ).run()
+
+    db.prepare(
+        `
+        CREATE TABLE IF NOT EXISTS posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        createdDate TEXT,
+        title STRING NOT NULL,
+        body TEXT NOT NULL,
+        authorid INTEGER,
+        FOREIGN KEY (authorid) REFERENCES users (id)
+        )
+      `
+      ).run()
 })
 
 createTables()
@@ -99,9 +113,54 @@ app.post("/login", (req, res) =>{
         httpOnly: true,
         secure: true,
         sameSite: "strict",
-        maxAge: 1000 * 60 * 60 * 24})
+        maxAge: 1000 * 60 * 60 * 24
+    })
 
     res.redirect("/")
+})
+
+function mustBeLoggedIn(req, res, next) {
+    if (req.user){
+        return next()
+    }
+    return res.redirect("/")
+}
+
+app.get("/create-post", mustBeLoggedIn, (req, res) =>{
+    res.render("create-post")
+})
+
+function sharedPostValdation(req){
+    const errors = []
+
+    if (typeof req.body.title !== "string") req.body.title =""
+    if (typeof req.body.body !== "string") req.body.body =""
+
+    //trim - sanitize or strip out html
+    req.body.title = sanitizeHTML(req.body.title.trim(), {allowedTags: [], allowedAttributes: {}})
+    req.body.body = sanitizeHTML(req.body.body.trim(), {allowedTags: [], allowedAttributes: {}})
+
+    if (!req.body.title) errors.push("You must provide a title.")
+    if (!req.body.body) errors.push("You must provide a content.")
+
+    return errors
+}
+
+app.post("/create-post", mustBeLoggedIn, (req, res) =>{
+    const errors = sharedPostValdation(req)
+
+    if (errors.length) {
+        return res.render("/create-post", {errors})
+    }
+
+    // save into datebase
+    const ourStatement = db.prepare("INSERT INTO posts (title, body, authorid, createdDate) VALUES (?, ?, ?, ?)")
+    const result = ourStatement.run(req.body.title, req.body.body, req.user.userid, new Date().toISOString())
+
+    const getPostStatement = db.prepare("SELECT * FROM posts WHERE ROWID = ?")
+    const realPost = getPostStatement.get(result.lastInsertRowid)
+    
+    res.redirect(`/post/${realPost.id}`)
 })
 
 app.post("/register", (req, res) => {

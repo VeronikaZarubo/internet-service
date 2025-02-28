@@ -1,6 +1,6 @@
 # internet-service
 
-An experimental backend including registration, login, main and "Create post" pages. The service is written in ejs, css and html and connected to a SQLite database. 
+An experimental backend including registration, login, main and "Create post" pages. The service is written with ejs, css and html and connected to a SQLite database. 
 
 # Visuals:
 Registration page with error messages:
